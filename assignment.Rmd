@@ -44,6 +44,76 @@ summary(df)
 levels(df$EVTYPE) <- toupper(levels(df$EVTYPE))
 ```
 
+## Merge some EVTYPE's into the event types enumerated by the NWS
+```r
+df$EVTYPE[grep("AVAL", df$EVTYPE)] <- "AVALANCHE"
+df$EVTYPE[grep("BLIZ", df$EVTYPE)] <- "BLIZZARD"
+df$EVTYPE[grep("COAST.* FL", df$EVTYPE)] <- "COASTAL FLOOD"
+df$EVTYPE[grep("BEACH FL", df$EVTYPE)] <- "COASTAL FLOOD"
+df$EVTYPE[grep("COLD", df$EVTYPE)] <- "COLD/WIND CHILL"
+df$EVTYPE[grep("WIND CH", df$EVTYPE)] <- "COLD/WIND CHILL"
+df$EVTYPE[grep("ICE.*FOG", df$EVTYPE)] <- "FREEZING FOG"
+df$EVTYPE[grep("FRE.*FOG", df$EVTYPE)] <- "FREEZING FOG"
+df$EVTYPE[grep("DENS.*FOG", df$EVTYPE)] <- "DENSE FOG"
+df$EVTYPE[grep("^FOG$", df$EVTYPE)] <- "DENSE FOG"
+df$EVTYPE[grep("SMOKE", df$EVTYPE)] <- "DENSE SMOKE"
+df$EVTYPE[grep("DROU", df$EVTYPE)] <- "DROUGHT"
+df$EVTYPE[grep("DUST.*DEV", df$EVTYPE)] <- "DUST DEVIL"
+df$EVTYPE[grep("DUST.*ST", df$EVTYPE)] <- "DUST STORM"
+df$EVTYPE[grep("BLOWING DUST", df$EVTYPE)] <- "DUST STORM"
+df$EVTYPE[grep("SAHARAN DUST", df$EVTYPE)] <- "DUST STORM"
+df$EVTYPE[grep("HEAT", df$EVTYPE)] <- "EXCESSIVE HEAT"
+df$EVTYPE[grep("CHILL", df$EVTYPE)] <- "EXTREME COLD/WIND CHILL"
+df$EVTYPE[grep("COLD", df$EVTYPE)] <- "EXTREME COLD/WIND CHILL"
+df$EVTYPE[grep("FLASH", df$EVTYPE)] <- "FLASH FLOOD"
+df$EVTYPE[grep("^FLOOD", df$EVTYPE)] <- "FLOOD"
+df$EVTYPE[grep("FROST", df$EVTYPE)] <- "FROST/FREEZE"
+df$EVTYPE[grep("FREEZE", df$EVTYPE)] <- "FROST/FREEZE"
+df$EVTYPE[grep("FUNNEL", df$EVTYPE)] <- "FUNNEL CLOUD"
+df$EVTYPE[grep("HAIL", df$EVTYPE)] <- "HAIL"
+df$EVTYPE[grep("HEAT", df$EVTYPE)] <- "HEAT"            # After "DROUGHT"
+df$EVTYPE[grep("SURF", df$EVTYPE)] <- "HIGH SURF"
+df$EVTYPE[grep("HURRICANE", df$EVTYPE)] <- "HURRICANE"
+df$EVTYPE[grep("TYPHOON", df$EVTYPE)] <- "HURRICANE"
+df$EVTYPE[grep("ICE ST", df$EVTYPE)] <- "ICE STORM"
+df$EVTYPE[grep("LAKE FL", df$EVTYPE)] <- "LAKESHORE FLOOD"
+df$EVTYPE[grep("LAKE SN", df$EVTYPE)] <- "LAKE-EFFECT SNOW"
+df$EVTYPE[grep("LIGHTN", df$EVTYPE)] <- "LIGHTNING"
+df$EVTYPE[grep("MARINE T.* WIND", df$EVTYPE)] <- "MARINE THUNDERSTORM WIND"
+df$EVTYPE[grep("RIP .*CURR", df$EVTYPE)] <- "RIP CURRENT"
+df$EVTYPE[grep("SLEET", df$EVTYPE)] <- "SLEET"
+df$EVTYPE[grep("SURGE", df$EVTYPE)] <- "STORM SURGE/TIDE"
+df$EVTYPE[grep("STR.* WIND", df$EVTYPE)] <- "STRONG WIND"         # only wind, no storms
+df$EVTYPE[grep("THU.*WIND", df$EVTYPE)] <- "THUNDERSTORM WIND"
+df$EVTYPE[grep("TSTM WIND", df$EVTYPE)] <- "THUNDERSTORM WIND"
+df$EVTYPE[grep("TSTM WND", df$EVTYPE)] <- "THUNDERSTORM WIND"
+df$EVTYPE[grep("TSTMW", df$EVTYPE)] <- "THUNDERSTORM WIND"
+df$EVTYPE[grep("TORN", df$EVTYPE)] <- "TORNADO"
+df$EVTYPE[grep("TROP", df$EVTYPE)] <- "TROPICAL STORM"
+df$EVTYPE[grep("VOLC", df$EVTYPE)] <- "VOLCANIC ASH"
+df$EVTYPE[grep("SPOU", df$EVTYPE)] <- "WATERSPOUT"
+df$EVTYPE[grep("FIRE", df$EVTYPE)] <- "WILDFIRE"
+df$EVTYPE[grep("WINTER S", df$EVTYPE)] <- "WINTER STORM"
+df$EVTYPE[grep("WINTER W", df$EVTYPE)] <- "WINTER WEATHER"
+df$EVTYPE[grep("HEAVY RAIN", df$EVTYPE)] <- "HEAVY RAIN"
+df$EVTYPE[grep("EXCESSIVE RAIN", df$EVTYPE)] <- "HEAVY RAIN"
+df$EVTYPE[grep("RAINSTORM", df$EVTYPE)] <- "HEAVY RAIN"
+df$EVTYPE[grep("RAIN \\(HEAVY\\)", df$EVTYPE)] <- "HEAVY RAIN"
+df$EVTYPE[grep("TORR.* RAIN", df$EVTYPE)] <- "HEAVY RAIN"
+df$EVTYPE[grep("PROLONGED RAIN", df$EVTYPE)] <- "HEAVY RAIN"
+df$EVTYPE[grep("HVY RAIN", df$EVTYPE)] <- "HEAVY RAIN"
+df$EVTYPE[grep("HEAVY PRECIP", df$EVTYPE)] <- "HEAVY RAIN"
+df$EVTYPE[grep("EXCESSIVE PRECIP", df$EVTYPE)] <- "HEAVY RAIN"
+df$EVTYPE[grep("RECORD PRECIP", df$EVTYPE)] <- "HEAVY RAIN"
+df$EVTYPE[grep("HIGH WIND", df$EVTYPE)] <- "HIGH WIND"         # only wind, no storms
+
+
+
+df$EVTYPE[grep("FLOOD", df$EVTYPE)] <- "FLOOD"
+
+
+```
+
 ## Isolate important EVTYPE's by non-zero FATALITIES, INJURIES, or PROPDMG
 ```r
 ddply(df, .(EVTYPE), summarize, imp_events = (FATALITIES>0) || (INJURIES>0) || (PROPDMG>0))
