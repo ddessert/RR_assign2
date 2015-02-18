@@ -5,12 +5,9 @@ date: "Tuesday, February 17, 2015"
 output: html_document
 keep_md: true
 ---
-# USA Unhealthy Weather Events
 
 ## Synopsis
 This report identifies weather severe events harmful to people and/or property. The analysis uses historical data from the [NOAA Storm Database](http://www.ncdc.noaa.gov/stormevents/) between 1950 and 2011.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ## Load necessary packages to execute
 ```r
@@ -26,7 +23,7 @@ sessionInfo()
 ## Download the source file
 ```r
 inFile <- "./data/repdata_data_StormData.csv.bz2"
-download.file("https://d396qusza40orc.cloudfront.net/repdata_data_StormData.csv.bz2", 
+download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2", 
               inFile)
 ```
 
@@ -45,8 +42,18 @@ levels(df$EVTYPE) <- toupper(levels(df$EVTYPE))
 ```
 
 ## Merge some EVTYPE's into the event types enumerated by the NWS
+The people who entered the data into the database were not very consistent.
+Here I try to coerce the various EVTYPE's used into one of the 48 EVTYPE's
+spelled out specifically in the [Storm Event documentation](http://www.nws.noaa.gov/directives/).  
+Event Type(s)     | Dates Available
+----------------- | --------------------
+Tornado           | Jan 1950 - Present
+Thunderstorm Wind | Jan 1955 - Present
+Hail              | Jan 1955 - Present
+All others        | Jan 1996 - Present
+
 ```r
-# For some reason, DEBRIS FLOW is not an entry. Add it.
+# For some reason, DEBRIS FLOW is not an entry. Add it to our levels.
 levels(df$EVTYPE) <- c("DEBRIS FLOW", levels(df$EVTYPE))
 
 df$EVTYPE[grep("AVAL", df$EVTYPE)] <- "AVALANCHE"
@@ -56,6 +63,7 @@ df$EVTYPE[grep("CSTL FL", df$EVTYPE)] <- "COASTAL FLOOD"
 df$EVTYPE[grep("BEACH FL", df$EVTYPE)] <- "COASTAL FLOOD"
 df$EVTYPE[grep("TIDAL FL", df$EVTYPE)] <- "COASTAL FLOOD"
 df$EVTYPE[grep("COLD", df$EVTYPE)] <- "COLD/WIND CHILL"
+df$EVTYPE[grep("HYPERTHERMIA", df$EVTYPE)] <- "COLD/WIND CHILL"
 df$EVTYPE[grep("WIND CH", df$EVTYPE)] <- "COLD/WIND CHILL"
 df$EVTYPE[grep("ICE.*FOG", df$EVTYPE)] <- "FREEZING FOG"
 df$EVTYPE[grep("FRE.*FOG", df$EVTYPE)] <- "FREEZING FOG"
@@ -77,6 +85,7 @@ df$EVTYPE[grep("FLASH", df$EVTYPE)] <- "FLASH FLOOD"
 df$EVTYPE[grep("^FLOOD", df$EVTYPE)] <- "FLOOD"
 df$EVTYPE[grep("FROST", df$EVTYPE)] <- "FROST/FREEZE"
 df$EVTYPE[grep("FREEZE", df$EVTYPE)] <- "FROST/FREEZE"
+df$EVTYPE[grep("BLACK ICE", df$EVTYPE)] <- "FROST/FREEZE"
 df$EVTYPE[grep("FUNNEL", df$EVTYPE)] <- "FUNNEL CLOUD"
 df$EVTYPE[grep("HAIL", df$EVTYPE)] <- "HAIL"
 df$EVTYPE[grep("HEAT", df$EVTYPE)] <- "HEAT"            # After "DROUGHT"
@@ -84,8 +93,10 @@ df$EVTYPE[grep("HEAV.* SNOW", df$EVTYPE)] <- "HEAVY SNOW"
 df$EVTYPE[grep("RECORD.* SNOW", df$EVTYPE)] <- "HEAVY SNOW"
 df$EVTYPE[grep("SNOWSTORM", df$EVTYPE)] <- "HEAVY SNOW"
 df$EVTYPE[grep("SNOW.* RECORD", df$EVTYPE)] <- "HEAVY SNOW"
+df$EVTYPE[grep("FIRST SNOW", df$EVTYPE)] <- "HEAVY SNOW"
 df$EVTYPE[grep("SURF", df$EVTYPE)] <- "HIGH SURF"
 df$EVTYPE[grep("HURRICANE", df$EVTYPE)] <- "HURRICANE"
+df$EVTYPE[grep("REMNANTS OF FLOYD", df$EVTYPE)] <- "HURRICANE"
 df$EVTYPE[grep("TYPHOON", df$EVTYPE)] <- "HURRICANE"
 df$EVTYPE[grep("ICE ST", df$EVTYPE)] <- "ICE STORM"
 df$EVTYPE[grep("ICE FLOES", df$EVTYPE)] <- "ICE STORM"
@@ -95,6 +106,7 @@ df$EVTYPE[grep("LAKE FL", df$EVTYPE)] <- "LAKESHORE FLOOD"
 df$EVTYPE[grep("LAKE SN", df$EVTYPE)] <- "LAKE-EFFECT SNOW"
 df$EVTYPE[grep("LIGHTN", df$EVTYPE)] <- "LIGHTNING"
 df$EVTYPE[grep("LIGNTNING", df$EVTYPE)] <- "LIGHTNING"
+df$EVTYPE[grep("LIGHTING", df$EVTYPE)] <- "LIGHTNING"
 df$EVTYPE[grep("MARINE T.* WIND", df$EVTYPE)] <- "MARINE THUNDERSTORM WIND"
 df$EVTYPE[grep("RIP .*CURR", df$EVTYPE)] <- "RIP CURRENT"
 df$EVTYPE[grep("SLEET", df$EVTYPE)] <- "SLEET"
@@ -110,6 +122,8 @@ df$EVTYPE[grep("TSTM WND", df$EVTYPE)] <- "THUNDERSTORM WIND"
 df$EVTYPE[grep("TSTMW", df$EVTYPE)] <- "THUNDERSTORM WIND"
 df$EVTYPE[grep("THUNDERSTORMW", df$EVTYPE)] <- "THUNDERSTORM WIND"
 df$EVTYPE[grep("THUNDERSTORM WIN", df$EVTYPE)] <- "THUNDERSTORM WIND"
+df$EVTYPE[grep("THUNDERSTORM W INDS", df$EVTYPE)] <- "THUNDERSTORM WIND"
+df$EVTYPE[grep("GUSTNADO", df$EVTYPE)] <- "THUNDERSTORM WIND"
 df$EVTYPE[grep("TORN", df$EVTYPE)] <- "TORNADO"
 df$EVTYPE[grep("TROP", df$EVTYPE)] <- "TROPICAL STORM"
 df$EVTYPE[grep("VOLC", df$EVTYPE)] <- "VOLCANIC ASH"
@@ -117,6 +131,7 @@ df$EVTYPE[grep("SPOU", df$EVTYPE)] <- "WATERSPOUT"
 df$EVTYPE[grep("FIRE", df$EVTYPE)] <- "WILDFIRE"
 df$EVTYPE[grep("WINTER S", df$EVTYPE)] <- "WINTER STORM"
 df$EVTYPE[grep("WINTER W", df$EVTYPE)] <- "WINTER WEATHER"
+df$EVTYPE[grep("WINT.* MIX", df$EVTYPE)] <- "WINTER WEATHER"
 df$EVTYPE[grep("HEAVY RAIN", df$EVTYPE)] <- "HEAVY RAIN"
 df$EVTYPE[grep("EXCESSIVE RAIN", df$EVTYPE)] <- "HEAVY RAIN"
 df$EVTYPE[grep("RAINSTORM", df$EVTYPE)] <- "HEAVY RAIN"
@@ -150,15 +165,26 @@ x$EVTYPE[x$imp_events]
 ```
 
 ## Integrate the units for Property Damage
+The suffixes used in the database are varied and I'm unsure what the
+people who keyed them in really meant, but here's what I'm assuming:
+PROPDMGEXP | Multiplier
+---------- | ------------------
+b, B       | 10^9^ (Billions)
+m, M       | 10^6^ (Millions)
+k, K       | 10^3^ (Thousands)
+h, H       | 10^2^ (Hundreds)
+0..8       | 10^1^ (Tens)
++          | 10^0^ (Ones)
+-          | 10^0^ (Ones)
+?          | 10^0^ (Ones)
+" "        | 10^0^ (Ones)
+
 ```r
-m <- rep(NA, length = nrow(df))
+m <- rep(1, length = nrow(df))
 m[toupper(df$PROPDMGEXP)=="B"] <- 1E9
 m[toupper(df$PROPDMGEXP)=="M"] <- 1E6
 m[toupper(df$PROPDMGEXP)=="K"] <- 1E3
 m[toupper(df$PROPDMGEXP)=="H"] <- 1E2
-m[df$PROPDMGEXP==" "] <- 1
-m[df$PROPDMGEXP=="1"] <- 1
-m[df$PROPDMGEXP=="0"] <- 1
 df$PROPDMG <- df$PROPDMG * m
 ```
 
@@ -166,7 +192,11 @@ df$PROPDMG <- df$PROPDMG * m
 Fatalities
 Injuries
 Property Damage
+Count of events
+```r
+x <- ddply(df, .(EVTYPE), summarize, fatal = sum(FATALITIES), injury = sum(INJURIES), prop_dmg=sum(PROPDMG))
 
+```
 You can also embed plots, for example:
 
 ```{r, echo=FALSE}
