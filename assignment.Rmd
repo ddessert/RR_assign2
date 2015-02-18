@@ -141,7 +141,6 @@ df$EVTYPE[grep("SMALL FLOOD", df$EVTYPE)] <- "FLOOD"
 df$EVTYPE[grep("MAJOR FLOOD", df$EVTYPE)] <- "FLOOD"
 df$EVTYPE[grep("BREAKUP FLOOD", df$EVTYPE)] <- "FLOOD"
 df$EVTYPE[grep("ICE JAM FLOOD", df$EVTYPE)] <- "FLOOD"
-
 ```
 
 ## Isolate important EVTYPE's by non-zero FATALITIES, INJURIES, or PROPDMG
@@ -149,6 +148,24 @@ df$EVTYPE[grep("ICE JAM FLOOD", df$EVTYPE)] <- "FLOOD"
 x <- ddply(df, .(EVTYPE), summarize, imp_events = (FATALITIES>0) || (INJURIES>0) || (PROPDMG>0))
 x$EVTYPE[x$imp_events]
 ```
+
+## Integrate the units for Property Damage
+```r
+m <- rep(NA, length = nrow(df))
+m[toupper(df$PROPDMGEXP)=="B"] <- 1E9
+m[toupper(df$PROPDMGEXP)=="M"] <- 1E6
+m[toupper(df$PROPDMGEXP)=="K"] <- 1E3
+m[toupper(df$PROPDMGEXP)=="H"] <- 1E2
+m[df$PROPDMGEXP==" "] <- 1
+m[df$PROPDMGEXP=="1"] <- 1
+m[df$PROPDMGEXP=="0"] <- 1
+df$PROPDMG <- df$PROPDMG * m
+```
+
+## Find the Top-10 in each category:
+Fatalities
+Injuries
+Property Damage
 
 You can also embed plots, for example:
 
