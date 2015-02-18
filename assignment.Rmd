@@ -10,20 +10,20 @@ keep_md: true
 This report identifies weather severe events harmful to people and/or property. The analysis uses historical data from the [NOAA Storm Database](http://www.ncdc.noaa.gov/stormevents/) between 1950 and 2011.
 
 ## Load necessary packages to execute
-```r
+```{r}
 library(ggplot2)
 library(plyr)
 ```
 
 ## R Software environment
-```r
+```{r}
 sessionInfo()
 ```
 
 ## Download the source file
-```r
+```{r}
 inFile <- "./data/repdata_data_StormData.csv.bz2"
-download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2", 
+download.file("http://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2", 
               inFile)
 ```
 
@@ -31,13 +31,13 @@ download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.
 The input data file is stored in the ./data subdirectory and
 is in a comma-separated variable format (.csv extension) within 
 a zipped file (.bz2 extension). Extracting and loading takes a while.
-```r
+```{r}
 data <- read.csv(bzfile(inFile))
 df <- data[,c("EVTYPE", "FATALITIES", "INJURIES", "PROPDMG", "PROPDMGEXP")]
 summary(df)
 ```
 ## Combine EVTYPE's that are identical (ignore case difference)
-```r
+```{r}
 levels(df$EVTYPE) <- toupper(levels(df$EVTYPE))
 ```
 
@@ -52,7 +52,7 @@ Thunderstorm Wind | Jan 1955 - Present
 Hail              | Jan 1955 - Present
 All others        | Jan 1996 - Present
 
-```r
+```{r EVTYPE_cleanup}
 # For some reason, DEBRIS FLOW is not an entry. Add it to our levels.
 levels(df$EVTYPE) <- c("DEBRIS FLOW", levels(df$EVTYPE))
 
@@ -70,6 +70,7 @@ df$EVTYPE[grep("WIND CH", df$EVTYPE)] <- "COLD/WIND CHILL"
 df$EVTYPE[grep("ICE.*FOG", df$EVTYPE)] <- "FREEZING FOG"
 df$EVTYPE[grep("FRE.*FOG", df$EVTYPE)] <- "FREEZING FOG"
 df$EVTYPE[grep("MUD.*SL", df$EVTYPE)] <- "DEBRIS FLOW"
+df$EVTYPE[grep("ROCK SLIDE", df$EVTYPE)] <- "DEBRIS FLOW"
 df$EVTYPE[grep("LANDSL", df$EVTYPE)] <- "DEBRIS FLOW"
 df$EVTYPE[grep("COASTAL EROSION", df$EVTYPE)] <- "DEBRIS FLOW"
 df$EVTYPE[grep("DAM BREAK", df$EVTYPE)] <- "DEBRIS FLOW"
@@ -77,12 +78,19 @@ df$EVTYPE[grep("DENS.*FOG", df$EVTYPE)] <- "DENSE FOG"
 df$EVTYPE[grep("^FOG$", df$EVTYPE)] <- "DENSE FOG"
 df$EVTYPE[grep("SMOKE", df$EVTYPE)] <- "DENSE SMOKE"
 df$EVTYPE[grep("DROU", df$EVTYPE)] <- "DROUGHT"
+df$EVTYPE[grep("EXCESSIVELY DRY", df$EVTYPE)] <- "DROUGHT"
+df$EVTYPE[grep("HOT/DRY PATTERN", df$EVTYPE)] <- "DROUGHT"
+df$EVTYPE[grep("WARM DRY CONDITIONS", df$EVTYPE)] <- "DROUGHT"
+df$EVTYPE[grep("RECORD DRYNESS", df$EVTYPE)] <- "DROUGHT"
 df$EVTYPE[grep("DUST.*DEV", df$EVTYPE)] <- "DUST DEVIL"
 df$EVTYPE[grep("DUST.*ST", df$EVTYPE)] <- "DUST STORM"
 df$EVTYPE[grep("BLOWING DUST", df$EVTYPE)] <- "DUST STORM"
 df$EVTYPE[grep("SAHARAN DUST", df$EVTYPE)] <- "DUST STORM"
 df$EVTYPE[grep("HEAT", df$EVTYPE)] <- "EXCESSIVE HEAT"
+df$EVTYPE[grep("UNSEASONABLY WARM & WET", df$EVTYPE)] <- "EXCESSIVE HEAT"
+df$EVTYPE[grep("UNSEASONABLY HOT", df$EVTYPE)] <- "EXCESSIVE HEAT"
 df$EVTYPE[grep("CHILL", df$EVTYPE)] <- "EXTREME COLD/WIND CHILL"
+df$EVTYPE[grep("HYPOTHERMIA", df$EVTYPE)] <- "EXTREME COLD/WIND CHILL"
 df$EVTYPE[grep("COLD", df$EVTYPE)] <- "EXTREME COLD/WIND CHILL"
 df$EVTYPE[grep("LOW TEMP", df$EVTYPE)] <- "EXTREME COLD/WIND CHILL"
 df$EVTYPE[grep("FLASH", df$EVTYPE)] <- "FLASH FLOOD"
@@ -91,9 +99,14 @@ df$EVTYPE[grep("FROST", df$EVTYPE)] <- "FROST/FREEZE"
 df$EVTYPE[grep("FREEZE", df$EVTYPE)] <- "FROST/FREEZE"
 df$EVTYPE[grep("BLACK ICE", df$EVTYPE)] <- "FROST/FREEZE"
 df$EVTYPE[grep("PATCHY ICE", df$EVTYPE)] <- "FROST/FREEZE"
+df$EVTYPE[grep("GLAZE ICE", df$EVTYPE)] <- "FROST/FREEZE"
 df$EVTYPE[grep("FUNNEL", df$EVTYPE)] <- "FUNNEL CLOUD"
+df$EVTYPE[grep("ROTATING WALL CLOUD", df$EVTYPE)] <- "FUNNEL CLOUD"
 df$EVTYPE[grep("HAIL", df$EVTYPE)] <- "HAIL"
+df$EVTYPE[grep("ICE PELLETS", df$EVTYPE)] <- "HAIL"
 df$EVTYPE[grep("HEAT", df$EVTYPE)] <- "HEAT"            # After "DROUGHT"
+df$EVTYPE[grep("RAIN DAMAGE", df$EVTYPE)] <- "HEAVY RAIN"
+df$EVTYPE[grep("EXTREMELY WET", df$EVTYPE)] <- "HEAVY RAIN"
 df$EVTYPE[grep("HEAV.* SNOW", df$EVTYPE)] <- "HEAVY SNOW"
 df$EVTYPE[grep("RECORD.* SNOW", df$EVTYPE)] <- "HEAVY SNOW"
 df$EVTYPE[grep("SNOWSTORM", df$EVTYPE)] <- "HEAVY SNOW"
@@ -101,7 +114,9 @@ df$EVTYPE[grep("SNOW.* RECORD", df$EVTYPE)] <- "HEAVY SNOW"
 df$EVTYPE[grep("FIRST SNOW", df$EVTYPE)] <- "HEAVY SNOW"
 df$EVTYPE[grep("EXCESSIVE SNOW", df$EVTYPE)] <- "HEAVY SNOW"
 df$EVTYPE[grep("EARLY SNOW", df$EVTYPE)] <- "HEAVY SNOW"
+df$EVTYPE[grep("^RAIN/SNOW", df$EVTYPE)] <- "HEAVY SNOW"
 df$EVTYPE[grep("SURF", df$EVTYPE)] <- "HIGH SURF"
+df$EVTYPE[grep("^HIGH SEAS", df$EVTYPE)] <- "HIGH SURF"
 df$EVTYPE[grep("HURRICANE", df$EVTYPE)] <- "HURRICANE"
 df$EVTYPE[grep("REMNANTS OF FLOYD", df$EVTYPE)] <- "HURRICANE"
 df$EVTYPE[grep("TYPHOON", df$EVTYPE)] <- "HURRICANE"
@@ -115,9 +130,14 @@ df$EVTYPE[grep("LIGHTN", df$EVTYPE)] <- "LIGHTNING"
 df$EVTYPE[grep("LIGNTNING", df$EVTYPE)] <- "LIGHTNING"
 df$EVTYPE[grep("LIGHTING", df$EVTYPE)] <- "LIGHTNING"
 df$EVTYPE[grep("MARINE T.* WIND", df$EVTYPE)] <- "MARINE THUNDERSTORM WIND"
+df$EVTYPE[grep("ROUGH SEAS", df$EVTYPE)] <- "MARINE HIGH WIND"
+df$EVTYPE[grep("MARINE MISHAP", df$EVTYPE)] <- "MARINE HIGH WIND"
 df$EVTYPE[grep("RIP .*CURR", df$EVTYPE)] <- "RIP CURRENT"
 df$EVTYPE[grep("SLEET", df$EVTYPE)] <- "SLEET"
+df$EVTYPE[grep("FREEZING RAIN/SNOW", df$EVTYPE)] <- "SLEET"
+df$EVTYPE[grep("^HIGH WAVES", df$EVTYPE)] <- "STORM SURGE/TIDE"
 df$EVTYPE[grep("SURGE", df$EVTYPE)] <- "STORM SURGE/TIDE"
+df$EVTYPE[grep("HIGH TIDES", df$EVTYPE)] <- "STORM SURGE/TIDE"
 df$EVTYPE[grep("STR.* WIND", df$EVTYPE)] <- "STRONG WIND"         # only wind, no storms
 df$EVTYPE[grep("WIND GUST", df$EVTYPE)] <- "STRONG WIND"         # only wind, no storms
 df$EVTYPE[grep("WIND STORM", df$EVTYPE)] <- "STRONG WIND"         # only wind, no storms
@@ -125,6 +145,7 @@ df$EVTYPE[grep("WIND ADVIS", df$EVTYPE)] <- "STRONG WIND"         # only wind, n
 df$EVTYPE[grep("GUST.*WIND", df$EVTYPE)] <- "STRONG WIND"         # only wind, no storms
 df$EVTYPE[grep("THU.*WIND", df$EVTYPE)] <- "THUNDERSTORM WIND"
 df$EVTYPE[grep("TSTM WIND", df$EVTYPE)] <- "THUNDERSTORM WIND"
+df$EVTYPE[grep("DRY MICROBURST WINDS", df$EVTYPE)] <- "THUNDERSTORM WIND"
 df$EVTYPE[grep("TSTM WND", df$EVTYPE)] <- "THUNDERSTORM WIND"
 df$EVTYPE[grep("TSTMW", df$EVTYPE)] <- "THUNDERSTORM WIND"
 df$EVTYPE[grep("THUNDERSTORMW", df$EVTYPE)] <- "THUNDERSTORM WIND"
@@ -133,13 +154,23 @@ df$EVTYPE[grep("THUNDERSTORM W INDS", df$EVTYPE)] <- "THUNDERSTORM WIND"
 df$EVTYPE[grep("TUNDERSTORM WIND", df$EVTYPE)] <- "THUNDERSTORM WIND"
 df$EVTYPE[grep("GUSTNADO", df$EVTYPE)] <- "THUNDERSTORM WIND"
 df$EVTYPE[grep("TORN", df$EVTYPE)] <- "TORNADO"
+df$EVTYPE[grep("WHIRLWIND", df$EVTYPE)] <- "TORNADO"
 df$EVTYPE[grep("TROP", df$EVTYPE)] <- "TROPICAL STORM"
 df$EVTYPE[grep("VOLC", df$EVTYPE)] <- "VOLCANIC ASH"
 df$EVTYPE[grep("SPOU", df$EVTYPE)] <- "WATERSPOUT"
 df$EVTYPE[grep("FIRE", df$EVTYPE)] <- "WILDFIRE"
 df$EVTYPE[grep("WINTER S", df$EVTYPE)] <- "WINTER STORM"
 df$EVTYPE[grep("WINTER W", df$EVTYPE)] <- "WINTER WEATHER"
+df$EVTYPE[grep("SNOW SQUALLS", df$EVTYPE)] <- "WINTER WEATHER"
 df$EVTYPE[grep("WINT.* MIX", df$EVTYPE)] <- "WINTER WEATHER"
+df$EVTYPE[grep("^ICE$", df$EVTYPE)] <- "WINTER WEATHER"
+df$EVTYPE[grep("^ICE/SNOW$", df$EVTYPE)] <- "WINTER WEATHER"
+df$EVTYPE[grep("^SNOW AND ICE", df$EVTYPE)] <- "WINTER WEATHER"
+df$EVTYPE[grep("^SNOW/BLOWING SNOW", df$EVTYPE)] <- "WINTER WEATHER"
+df$EVTYPE[grep("^SNOW/FREEZING RAIN", df$EVTYPE)] <- "WINTER WEATHER"
+df$EVTYPE[grep("^DRIFTING SNOW", df$EVTYPE)] <- "WINTER WEATHER"
+df$EVTYPE[grep("^SNOW SQUALL", df$EVTYPE)] <- "WINTER WEATHER"
+df$EVTYPE[grep("^THUNDERSNOW SHOWER", df$EVTYPE)] <- "WINTER WEATHER"
 df$EVTYPE[grep("HEAVY RAIN", df$EVTYPE)] <- "HEAVY RAIN"
 df$EVTYPE[grep("EXCESSIVE RAIN", df$EVTYPE)] <- "HEAVY RAIN"
 df$EVTYPE[grep("RAINSTORM", df$EVTYPE)] <- "HEAVY RAIN"
@@ -151,7 +182,9 @@ df$EVTYPE[grep("HEAVY PRECIP", df$EVTYPE)] <- "HEAVY RAIN"
 df$EVTYPE[grep("HEAVY SHOWER", df$EVTYPE)] <- "HEAVY RAIN"
 df$EVTYPE[grep("EXCESSIVE PRECIP", df$EVTYPE)] <- "HEAVY RAIN"
 df$EVTYPE[grep("RECORD PRECIP", df$EVTYPE)] <- "HEAVY RAIN"
+df$EVTYPE[grep("^THUNDERSTORM$", df$EVTYPE)] <- "HEAVY RAIN"
 df$EVTYPE[grep("HIGH +WIND", df$EVTYPE)] <- "HIGH WIND"         # only wind, no storms
+df$EVTYPE[grep("^STORM FORCE WINDS", df$EVTYPE)] <- "HIGH WIND"         # only wind, no storms
 df$EVTYPE[grep("RIVER FLOOD", df$EVTYPE)] <- "FLOOD"
 df$EVTYPE[grep("STREAM FLOOD", df$EVTYPE)] <- "FLOOD"
 df$EVTYPE[grep("URBAN.* FLOOD", df$EVTYPE)] <- "FLOOD"
@@ -167,17 +200,19 @@ df$EVTYPE[grep("BREAKUP FLOOD", df$EVTYPE)] <- "FLOOD"
 df$EVTYPE[grep("ICE JAM FLOOD", df$EVTYPE)] <- "FLOOD"
 df$EVTYPE[grep("SML STREAM FLD", df$EVTYPE)] <- "FLOOD"
 df$EVTYPE[grep("DAM FAILURE", df$EVTYPE)] <- "FLOOD"
+df$EVTYPE[grep("HIGH WATER", df$EVTYPE)] <- "FLOOD"
 ```
 
 ## Isolate important EVTYPE's by non-zero FATALITIES, INJURIES, or PROPDMG
-```r
+```{r}
 x <- ddply(df, .(EVTYPE), summarize, imp_events = (FATALITIES>0) || (INJURIES>0) || (PROPDMG>0))
 x$EVTYPE[x$imp_events]
 ```
 
 ## Integrate the units for Property Damage
 The suffixes used in the database are varied and I'm unsure what the
-people who keyed them in really meant, but here's what I'm assuming:
+people who keyed them in really meant, but here's what I'm assuming:  
+Table: Property Damage Multipliers
 PROPDMGEXP | Multiplier
 ---------- | ------------------
 b, B       | 10^9^ (Billions)
@@ -190,7 +225,7 @@ h, H       | 10^2^ (Hundreds)
 ?          | 10^0^ (Ones)
 " "        | 10^0^ (Ones)
 
-```r
+```{r}
 m <- rep(1, length = nrow(df))
 m[toupper(df$PROPDMGEXP)=="B"] <- 1E9
 m[toupper(df$PROPDMGEXP)=="M"] <- 1E6
@@ -204,14 +239,20 @@ Fatalities
 Injuries
 Property Damage
 Count of events
-```r
-x <- ddply(df, .(EVTYPE), summarize, fatal = sum(FATALITIES), injury = sum(INJURIES), prop_dmg=sum(PROPDMG))
-
+```{r}
+x <- ddply(df, .(EVTYPE), summarize, count=length(EVTYPE), fatal=sum(FATALITIES), injury=sum(INJURIES), prop_dmg=sum(PROPDMG))
 ```
-You can also embed plots, for example:
-
-```{r, echo=FALSE}
-plot(cars)
+Top-20 Ordered by property damage per event
+```{r}
+head(x[order(x$prop_dmg/x$count, decreasing=TRUE),], 20)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Top-20 Ordered by fatalities per event
+```{r}
+head(x[order(x$fatal/x$count, decreasing=TRUE),], 20)
+```
+
+Top-20 Ordered by injuries per event
+```{r}
+head(x[order(x$injury/x$count, decreasing=TRUE),], 20)
+```
