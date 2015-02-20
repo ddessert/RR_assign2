@@ -36,15 +36,20 @@ data <- read.csv(bzfile(inFile))
 df <- data[,c("EVTYPE", "FATALITIES", "INJURIES", "PROPDMG", "PROPDMGEXP")]
 summary(df)
 ```
-## Combine EVTYPE's that are identical (ignore case difference)
+Extract the year of occurrence
+```{r}
+df$YEAR <- as.numeric(format(strptime(data$BGN_DATE, format="%m/%d/%Y %H:%M:%S"), "%Y"))
+```
+Combine EVTYPE's that are identical (ignore case difference)
 ```{r}
 levels(df$EVTYPE) <- toupper(levels(df$EVTYPE))
 ```
 
-## Merge some EVTYPE's into the event types enumerated by the NWS
+Merge some EVTYPE's into the event types enumerated by the NWS.  
 The people who entered the data into the database were not very consistent.
-Here I try to coerce the various EVTYPE's used into one of the 48 EVTYPE's
+Here I coerce the various EVTYPE's used into one of the 48 EVTYPE's
 spelled out specifically in the [Storm Event documentation](http://www.nws.noaa.gov/directives/).  
+
 Event Type(s)     | Dates Available
 ----------------- | --------------------
 Tornado           | Jan 1950 - Present
@@ -183,6 +188,7 @@ df$EVTYPE[grep("HEAVY SHOWER", df$EVTYPE)] <- "HEAVY RAIN"
 df$EVTYPE[grep("EXCESSIVE PRECIP", df$EVTYPE)] <- "HEAVY RAIN"
 df$EVTYPE[grep("RECORD PRECIP", df$EVTYPE)] <- "HEAVY RAIN"
 df$EVTYPE[grep("^THUNDERSTORM$", df$EVTYPE)] <- "HEAVY RAIN"
+df$EVTYPE[grep("^WET YEAR", df$EVTYPE)] <- "HEAVY RAIN"
 df$EVTYPE[grep("HIGH +WIND", df$EVTYPE)] <- "HIGH WIND"         # only wind, no storms
 df$EVTYPE[grep("^STORM FORCE WINDS", df$EVTYPE)] <- "HIGH WIND"         # only wind, no storms
 df$EVTYPE[grep("RIVER FLOOD", df$EVTYPE)] <- "FLOOD"
@@ -240,19 +246,33 @@ Injuries
 Property Damage
 Count of events
 ```{r}
-x <- ddply(df, .(EVTYPE), summarize, count=length(EVTYPE), fatal=sum(FATALITIES), injury=sum(INJURIES), prop_dmg=sum(PROPDMG))
+x <- ddply(df, .(EVTYPE, YEAR), summarize, 
+           count=length(EVTYPE), 
+           fatal.sum=sum(FATALITIES), 
+           fatal.mean=mean(FATALITIES), 
+           fatal.sd=sd(FATALITIES), 
+           injury.sum=sum(INJURIES), 
+           injury.mean=mean(INJURIES), 
+           injury.sd=sd(INJURIES), 
+           prop_dmg.sum=sum(PROPDMG),
+           prop_dmg.mean=mean(PROPDMG),
+           prop_dmg.sd=sd(PROPDMG)
+           )
 ```
-Top-20 Ordered by property damage per event
+Top-N Ordered by property damage per event
 ```{r}
-head(x[order(x$prop_dmg/x$count, decreasing=TRUE),], 20)
+N <- 7      # Number of EVTYPE's to plot
+top_propdmg <- x[order(x$prop_dmg.mean, decreasing=TRUE)[1:N],]
+df_top_propdmg <- df[df$EVTYPE %in% top_propdmg$EVTYPE, ]
+qplot(top_propdmg$fatal.mean, top_propdmg$injury.mean, size=top_propdmg$count, colour=top_propdmg$EVTYPE)
 ```
 
-Top-20 Ordered by fatalities per event
+Top-N Ordered by fatalities per event
 ```{r}
-head(x[order(x$fatal/x$count, decreasing=TRUE),], 20)
+head(x[order(x$fatal.mean, decreasing=TRUE),], N)
 ```
 
-Top-20 Ordered by injuries per event
+Top-N Ordered by injuries per event
 ```{r}
-head(x[order(x$injury/x$count, decreasing=TRUE),], 20)
+head(x[order(x$injury.mean, decreasing=TRUE),], N)
 ```
