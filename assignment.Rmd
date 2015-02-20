@@ -1,5 +1,5 @@
 ---
-title: "USA Unhealthy Weather Events (1950-2011)"
+title: "USA Hazardous Weather Events (1950-2011)"
 author: "David Dessert"
 date: "Tuesday, February 17, 2015"
 output: html_document
@@ -7,48 +7,44 @@ keep_md: true
 ---
 
 ## Synopsis
-This report identifies weather severe events harmful to people and/or property. The analysis uses historical data from the [NOAA Storm Database](http://www.ncdc.noaa.gov/stormevents/) between 1950 and 2011.
+This report identifies weather severe events most harmful to people and property. Using historical data from the [NOAA Storm Database](http://www.ncdc.noaa.gov/stormevents/) between 1950 and 2011, annualized fatalities and injuries counts of weather events were analyzed and the worst weather events identified. By our analysis, tornadoes and heat events caused the most annual fatalities and injuries while droughts, floods, and hurricanes caused the most crop and property damage.
 
-## Load necessary packages to execute
+## Downloading and Processing the Raw Source File
+First, we load the necessary packages to execute
 ```{r}
 library(ggplot2)
 library(plyr)
 ```
 
-## R Software environment
+This is the R Software environment we are using for this analysis.
 ```{r}
 sessionInfo()
 ```
 
-## Download the source file
+The input data file is downloaded from the Coursera web site and stored in the ./data subdirectory. 
+The source file is in a comma-separated variable format (.csv extension) within 
+a zipped file (.bz2 extension). Extracting and loading takes a while.
 ```{r}
 inFile <- "./data/repdata_data_StormData.csv.bz2"
 # download.file("http://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2", 
 #               inFile)
-```
-
-## Load and preprocessing the data
-The input data file is stored in the ./data subdirectory and
-is in a comma-separated variable format (.csv extension) within 
-a zipped file (.bz2 extension). Extracting and loading takes a while.
-```{r}
 data <- read.csv(bzfile(inFile))
 df <- data[,c("EVTYPE", "FATALITIES", "INJURIES", "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
 summary(df)
 ```
+
+### Cleaning the Data
 Extract the year of occurrence
 ```{r}
 df$YEAR <- as.numeric(gsub("\\d+/\\d+/(\\d+).*", "\\1", data$BGN_DATE))
 ```
+
 Combine EVTYPE's that are identical (ignore case difference)
 ```{r}
 levels(df$EVTYPE) <- toupper(levels(df$EVTYPE))
 ```
-
-Merge some EVTYPE's into the event types enumerated by the NWS.  
-The people who entered the data into the database were not very consistent.
-Here I coerce the various EVTYPE's used into one of the 48 EVTYPE's
-spelled out specifically in the [Storm Event documentation](http://www.nws.noaa.gov/directives/).  
+Not all weather events were available throughout the entire database.
+This table indicates the dates when weather events were available.
 
 | Event Type(s)     | Dates Available     |
 | ----------------- | ------------------- |
@@ -57,10 +53,20 @@ spelled out specifically in the [Storm Event documentation](http://www.nws.noaa.
 | Hail              | Jan 1955 - Present  |
 | All others        | Jan 1996 - Present  |
 
+Additionally, damage estimates were not recorded in the database prior to 1993.
+
+Here we merge some EVTYPE's into the event types enumerated by the NWS.
+The people who entered the data into the database were not very consistent.
+Here I coerce the various EVTYPE's used into one of the 48 EVTYPE's
+spelled out specifically in the [Storm Event documentation](http://www.nws.noaa.gov/directives/).
+Not all EVTYPE's remaining will have been coerced into the correct types,
+but all weather events large enough to affect the analysis are corrected.
+
 ```{r EVTYPE_cleanup}
-# For some reason, DEBRIS FLOW is not an entry. Add it to our levels.
+# For some reason, DEBRIS FLOW is not an entry. Add it to our levels (at the end).
 levels(df$EVTYPE) <- c(levels(df$EVTYPE), "DEBRIS FLOW")
 
+# Start coercion of EVTYPE's into the 48 "approved" types
 df$EVTYPE[grep("AVAL", df$EVTYPE)] <- "AVALANCHE"
 df$EVTYPE[grep("BLIZ", df$EVTYPE)] <- "BLIZZARD"
 df$EVTYPE[grep("COAST.*FL", df$EVTYPE)] <- "COASTAL FLOOD"
@@ -224,22 +230,24 @@ df$EVTYPE[grep("DAM FAILURE", df$EVTYPE)] <- "FLOOD"
 df$EVTYPE[grep("HIGH WATER", df$EVTYPE)] <- "FLOOD"
 ```
 
-## Integrate the units for Crop & Property Damages
-The suffixes used in the database are varied and I'm unsure what the
-people who keyed them in really meant, but here's what I'm assuming:  
-Table: Damage Multipliers
-PROPDMGEXP | Multiplier
----------- | ------------------
-b, B       | 10^9^ (Billions)
-m, M       | 10^6^ (Millions)
-k, K       | 10^3^ (Thousands)
-h, H       | 10^2^ (Hundreds)
-0..8       | 10^1^ (Tens)
-+          | 10^0^ (Ones)
--          | 10^0^ (Ones)
-?          | 10^0^ (Ones)
-" "        | 10^0^ (Ones)
+### Incorporate the units for Crop & Property Damages
+The suffixes used in the database are quite varied. Based on a review of the
+entries, here is what I'm assuming each multiplier means:  
 
+Table: Damage Multipliers
+| DMGEXP     | Multiplier         | Interpretation           |
+| ---------- | ------------------ | ------------------------ |
+| b, B       | 10^9^ (Billions)   | Billions                 |
+| m, M       | 10^6^ (Millions)   | Millions                 |
+| k, K       | 10^3^ (Thousands)  | Thousands                |
+| h, H       | 10^2^ (Hundreds)   | Hundreds                 |
+| 0..8       | 10^1^ (Tens)       | extra significant digit  |
+| +          | 10^0^ (Ones)       | >                        |
+| -          | 10^0^ (Ones)       | <                        |
+| ?          | 10^0^ (Ones)       | usually 0                |
+| " "        | 10^0^ (Ones)       | usually 0                |
+
+Fix up the property and crop damage estimates using the multipliers.
 ```{r}
 m <- rep(1, length = nrow(df))
 m[toupper(df$PROPDMGEXP)=="B"] <- 1E9
@@ -256,11 +264,8 @@ m[toupper(df$CROPDMGEXP)=="H"] <- 1E2
 df$CROPDMG <- df$CROPDMG * m
 ```
 
-## Find the Top-10 in each category:
-Fatalities
-Injuries
-Property Damage
-Count of events
+## Results
+First, we summarize the weather events by year and event into a data frame used for the rest of the summary.
 ```{r}
 x <- ddply(df, .(EVTYPE, YEAR), summarize, 
            count=length(EVTYPE), 
@@ -270,9 +275,14 @@ x <- ddply(df, .(EVTYPE, YEAR), summarize,
            crop_dmg.sum=sum(CROPDMG)
            )
 ```
-Top-N Ordered by property damage per event
+For each category of fatalities, injuries, crop damage, and property damage, 
+we'll be getting the top `r N` EVTYPE's for display. 
+When displaying the fatalities/injuries figure, less than `r 2*N` EVTYPE's 
+are displayed because of overlap in the fataility top `r N` EVTYPE's 
+and injury top `r N` EVTYPE's. The same comment holds true for the
+crop/property damage figure.
 ```{r}
-N <- 4      # Number of EVTYPE's to plot
+N <- 4      # Number of top EVTYPE's to be plotted in each category
 # Note that property damage was not reported until 1993, so the
 # maximum number of years is limited to 19 (1993 - 2011)
 y <- ddply(x, .(EVTYPE), summarize, 
@@ -280,18 +290,21 @@ y <- ddply(x, .(EVTYPE), summarize,
            damage=sum(prop_dmg.sum), 
            damage_per_year=sum(prop_dmg.sum)/min(length(YEAR), 19))
 top_damage <- head(y[order(y$damage_per_year, decreasing=TRUE),], 6)
+```
+
+```{r echo=FALSE, warning=FALSE, fig.width=9}
 p <- ggplot(x[x$EVTYPE %in% top_damage$EVTYPE & (x$YEAR >= 1993),], aes(x=EVTYPE, y=prop_dmg.sum)) 
 p <- p + geom_violin(alpha=1/4, aes(fill=EVTYPE)) 
 p <- p + geom_jitter(aes(colour=EVTYPE))
 p <- p + scale_y_log10(breaks=c(1, 1E3, 1E6, 1E9, 1E12), labels=c("1","1K","1M","1B","1T"))
 p <- p + xlab('Storm Event')                        # x-axis label
-p <- p + ylab('Yearly Property Damage ($)')             # y-axis label
-p <- p + ggtitle("Top Storm Property Hazards")      # graph title
+p <- p + ylab('Annual Property Damage ($)')             # y-axis label
+p <- p + ggtitle("Top Weather Property Hazards")      # graph title
 print(p)
 ```
 
 Top-N Ordered by fatalities & injuries per year
-```{r}
+```{r echo=FALSE, warning=FALSE, fig.width=9}
 y <- ddply(x, .(EVTYPE), summarize, 
            count=length(YEAR), 
            fatal=sum(fatal.sum), 
@@ -307,13 +320,13 @@ p <- p + scale_y_log10(breaks=c(1, 10, 100, 1000, 10000), labels=c("1","10","10"
 p <- p + scale_x_log10(breaks=c(1, 10, 100, 1000, 10000), labels=c("1","10","10","1000","10K"), limits=c(0.9, 10000))
 p <- p + xlab('Annual Fatalities')              # x-axis label
 p <- p + ylab('Annual Injuries')                # y-axis label
-p <- p + ggtitle("Top Storm Health Hazards")        # graph title
+p <- p + ggtitle("Top Weather Health Hazards")        # graph title
 print(p)
 ```
 
 
 Top-N Ordered by property & crop damage per year
-```{r}
+```{r echo=FALSE, warning=FALSE, fig.width=9}
 y <- ddply(x, .(EVTYPE), summarize, 
            count=length(YEAR), 
            prop=sum(prop_dmg.sum), 
@@ -329,6 +342,6 @@ p <- p + scale_x_log10(breaks=c(1, 1E3, 1E6, 1E9, 1E12), labels=c("1","1K","1M",
 # p <- p + geom_point(data=top_health, aes(x=fatal_per_year, y=injury_per_year)) + geom_point(aes(colour=EVTYPE))
 p <- p + xlab('Annual Property Damage ($)')              # x-axis label
 p <- p + ylab('Annual Crop Damage ($)')                # y-axis label
-p <- p + ggtitle("Top Storm Property Hazards")        # graph title
+p <- p + ggtitle("Top Weather Property Hazards")        # graph title
 print(p)
 ```
