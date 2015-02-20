@@ -59,7 +59,7 @@ All others        | Jan 1996 - Present
 
 ```{r EVTYPE_cleanup}
 # For some reason, DEBRIS FLOW is not an entry. Add it to our levels.
-levels(df$EVTYPE) <- c("DEBRIS FLOW", levels(df$EVTYPE))
+levels(df$EVTYPE) <- c(levels(df$EVTYPE), "DEBRIS FLOW")
 
 df$EVTYPE[grep("AVAL", df$EVTYPE)] <- "AVALANCHE"
 df$EVTYPE[grep("BLIZ", df$EVTYPE)] <- "BLIZZARD"
@@ -70,6 +70,7 @@ df$EVTYPE[grep("TIDAL FL", df$EVTYPE)] <- "COASTAL FLOOD"
 df$EVTYPE[grep("COASTALSTORM", df$EVTYPE)] <- "COASTAL FLOOD"
 df$EVTYPE[grep("COASTAL STORM", df$EVTYPE)] <- "COASTAL FLOOD"
 df$EVTYPE[grep("COLD", df$EVTYPE)] <- "COLD/WIND CHILL"
+df$EVTYPE[grep("UNSEASONABLY COOL", df$EVTYPE)] <- "COLD/WIND CHILL"
 df$EVTYPE[grep("HYPERTHERMIA", df$EVTYPE)] <- "COLD/WIND CHILL"
 df$EVTYPE[grep("WIND CH", df$EVTYPE)] <- "COLD/WIND CHILL"
 df$EVTYPE[grep("ICE.*FOG", df$EVTYPE)] <- "FREEZING FOG"
@@ -84,6 +85,7 @@ df$EVTYPE[grep("^FOG$", df$EVTYPE)] <- "DENSE FOG"
 df$EVTYPE[grep("SMOKE", df$EVTYPE)] <- "DENSE SMOKE"
 df$EVTYPE[grep("DROU", df$EVTYPE)] <- "DROUGHT"
 df$EVTYPE[grep("EXCESSIVELY DRY", df$EVTYPE)] <- "DROUGHT"
+df$EVTYPE[grep("UNSEASONABLY DRY", df$EVTYPE)] <- "DROUGHT"
 df$EVTYPE[grep("HOT/DRY PATTERN", df$EVTYPE)] <- "DROUGHT"
 df$EVTYPE[grep("WARM DRY CONDITIONS", df$EVTYPE)] <- "DROUGHT"
 df$EVTYPE[grep("RECORD DRYNESS", df$EVTYPE)] <- "DROUGHT"
@@ -110,6 +112,8 @@ df$EVTYPE[grep("ROTATING WALL CLOUD", df$EVTYPE)] <- "FUNNEL CLOUD"
 df$EVTYPE[grep("HAIL", df$EVTYPE)] <- "HAIL"
 df$EVTYPE[grep("ICE PELLETS", df$EVTYPE)] <- "HAIL"
 df$EVTYPE[grep("HEAT", df$EVTYPE)] <- "HEAT"            # After "DROUGHT"
+df$EVTYPE[grep("^UNSEASONABLY WARM$", df$EVTYPE)] <- "HEAT"            # After "DROUGHT"
+df$EVTYPE[grep("^UNSEASONABLY WARM YEAR$", df$EVTYPE)] <- "HEAT"            # After "DROUGHT"
 df$EVTYPE[grep("RAIN DAMAGE", df$EVTYPE)] <- "HEAVY RAIN"
 df$EVTYPE[grep("EXTREMELY WET", df$EVTYPE)] <- "HEAVY RAIN"
 df$EVTYPE[grep("HEAV.* SNOW", df$EVTYPE)] <- "HEAVY SNOW"
@@ -139,15 +143,20 @@ df$EVTYPE[grep("ROUGH SEAS", df$EVTYPE)] <- "MARINE HIGH WIND"
 df$EVTYPE[grep("MARINE MISHAP", df$EVTYPE)] <- "MARINE HIGH WIND"
 df$EVTYPE[grep("RIP .*CURR", df$EVTYPE)] <- "RIP CURRENT"
 df$EVTYPE[grep("SLEET", df$EVTYPE)] <- "SLEET"
-df$EVTYPE[grep("FREEZING RAIN/SNOW", df$EVTYPE)] <- "SLEET"
+df$EVTYPE[grep("FREEZING RAIN", df$EVTYPE)] <- "SLEET"
+df$EVTYPE[grep("FREEZING DRIZZLE", df$EVTYPE)] <- "SLEET"
 df$EVTYPE[grep("^HIGH WAVES", df$EVTYPE)] <- "STORM SURGE/TIDE"
 df$EVTYPE[grep("SURGE", df$EVTYPE)] <- "STORM SURGE/TIDE"
 df$EVTYPE[grep("HIGH TIDES", df$EVTYPE)] <- "STORM SURGE/TIDE"
+df$EVTYPE[grep("ASTRONOMICAL HIGH TIDE", df$EVTYPE)] <- "STORM SURGE/TIDE"
 df$EVTYPE[grep("STR.* WIND", df$EVTYPE)] <- "STRONG WIND"         # only wind, no storms
 df$EVTYPE[grep("WIND GUST", df$EVTYPE)] <- "STRONG WIND"         # only wind, no storms
 df$EVTYPE[grep("WIND STORM", df$EVTYPE)] <- "STRONG WIND"         # only wind, no storms
 df$EVTYPE[grep("WIND ADVIS", df$EVTYPE)] <- "STRONG WIND"         # only wind, no storms
 df$EVTYPE[grep("GUST.*WIND", df$EVTYPE)] <- "STRONG WIND"         # only wind, no storms
+df$EVTYPE[grep("^WIND$", df$EVTYPE)] <- "STRONG WIND"         # only wind, no storms
+df$EVTYPE[grep("^WINDS$", df$EVTYPE)] <- "STRONG WIND"         # only wind, no storms
+df$EVTYPE[grep("^WIND DAMAGE$", df$EVTYPE)] <- "STRONG WIND"         # only wind, no storms
 df$EVTYPE[grep("THU.*WIND", df$EVTYPE)] <- "THUNDERSTORM WIND"
 df$EVTYPE[grep("TSTM WIND", df$EVTYPE)] <- "THUNDERSTORM WIND"
 df$EVTYPE[grep("DRY MICROBURST WINDS", df$EVTYPE)] <- "THUNDERSTORM WIND"
@@ -157,6 +166,7 @@ df$EVTYPE[grep("THUNDERSTORMW", df$EVTYPE)] <- "THUNDERSTORM WIND"
 df$EVTYPE[grep("THUNDERSTORM WIN", df$EVTYPE)] <- "THUNDERSTORM WIND"
 df$EVTYPE[grep("THUNDERSTORM W INDS", df$EVTYPE)] <- "THUNDERSTORM WIND"
 df$EVTYPE[grep("TUNDERSTORM WIND", df$EVTYPE)] <- "THUNDERSTORM WIND"
+df$EVTYPE[grep("^SEVERE THUNDERSTORM", df$EVTYPE)] <- "THUNDERSTORM WIND"
 df$EVTYPE[grep("GUSTNADO", df$EVTYPE)] <- "THUNDERSTORM WIND"
 df$EVTYPE[grep("TORN", df$EVTYPE)] <- "TORNADO"
 df$EVTYPE[grep("WHIRLWIND", df$EVTYPE)] <- "TORNADO"
@@ -172,10 +182,15 @@ df$EVTYPE[grep("^ICE$", df$EVTYPE)] <- "WINTER WEATHER"
 df$EVTYPE[grep("^ICE/SNOW$", df$EVTYPE)] <- "WINTER WEATHER"
 df$EVTYPE[grep("^SNOW AND ICE", df$EVTYPE)] <- "WINTER WEATHER"
 df$EVTYPE[grep("^SNOW/BLOWING SNOW", df$EVTYPE)] <- "WINTER WEATHER"
+df$EVTYPE[grep("^LIGHT SNOW", df$EVTYPE)] <- "WINTER WEATHER"
 df$EVTYPE[grep("^SNOW/FREEZING RAIN", df$EVTYPE)] <- "WINTER WEATHER"
 df$EVTYPE[grep("^DRIFTING SNOW", df$EVTYPE)] <- "WINTER WEATHER"
 df$EVTYPE[grep("^SNOW SQUALL", df$EVTYPE)] <- "WINTER WEATHER"
 df$EVTYPE[grep("^THUNDERSNOW SHOWER", df$EVTYPE)] <- "WINTER WEATHER"
+df$EVTYPE[grep("^MIXED PRECIP", df$EVTYPE)] <- "WINTER WEATHER"
+df$EVTYPE[grep("^SNOW FREEZING RAIN", df$EVTYPE)] <- "WINTER WEATHER"
+df$EVTYPE[grep("^LAKE[ -]EFFECT SNOW", df$EVTYPE)] <- "WINTER WEATHER"
+df$EVTYPE[grep("^MIXED PRECIPITATION", df$EVTYPE)] <- "WINTER WEATHER"
 df$EVTYPE[grep("HEAVY RAIN", df$EVTYPE)] <- "HEAVY RAIN"
 df$EVTYPE[grep("EXCESSIVE RAIN", df$EVTYPE)] <- "HEAVY RAIN"
 df$EVTYPE[grep("RAINSTORM", df$EVTYPE)] <- "HEAVY RAIN"
@@ -249,30 +264,46 @@ Count of events
 x <- ddply(df, .(EVTYPE, YEAR), summarize, 
            count=length(EVTYPE), 
            fatal.sum=sum(FATALITIES), 
-           fatal.mean=mean(FATALITIES), 
-           fatal.sd=sd(FATALITIES), 
            injury.sum=sum(INJURIES), 
-           injury.mean=mean(INJURIES), 
-           injury.sd=sd(INJURIES), 
-           prop_dmg.sum=sum(PROPDMG),
-           prop_dmg.mean=mean(PROPDMG),
-           prop_dmg.sd=sd(PROPDMG)
+           prop_dmg.sum=sum(PROPDMG)
            )
 ```
 Top-N Ordered by property damage per event
 ```{r}
-N <- 7      # Number of EVTYPE's to plot
-top_propdmg <- x[order(x$prop_dmg.mean, decreasing=TRUE)[1:N],]
-df_top_propdmg <- df[df$EVTYPE %in% top_propdmg$EVTYPE, ]
-qplot(top_propdmg$fatal.mean, top_propdmg$injury.mean, size=top_propdmg$count, colour=top_propdmg$EVTYPE)
+N <- 4      # Number of EVTYPE's to plot
+# Note that property damage was not reported until 1993, so the
+# maximum number of years is limited to 19 (1993 - 2011)
+y <- ddply(x, .(EVTYPE), summarize, 
+           count=min(length(YEAR), 19),
+           damage=sum(prop_dmg.sum), 
+           damage_per_year=sum(prop_dmg.sum)/min(length(YEAR), 19))
+top_damage <- head(y[order(y$damage_per_year, decreasing=TRUE),], 6)
+p <- ggplot(x[x$EVTYPE %in% top_damage$EVTYPE & (x$YEAR >= 1993),], aes(x=EVTYPE, y=prop_dmg.sum)) 
+p <- p + geom_violin(alpha=1/4, aes(fill=EVTYPE)) 
+p <- p + geom_jitter(aes(colour=EVTYPE))
+p <- p + scale_y_log10(breaks=c(1, 1E3, 1E6, 1E9, 1E12), labels=c("1","1K","1M","1B","1T"))
+p <- p + xlab('Storm Event')                        # x-axis label
+p <- p + ylab('Yearly Property Damage ($)')             # y-axis label
+p <- p + ggtitle("Top Storm Property Hazards")      # graph title
+print(p)
 ```
 
-Top-N Ordered by fatalities per event
+Top-N Ordered by fatalities & injuries per year
 ```{r}
-head(x[order(x$fatal.mean, decreasing=TRUE),], N)
+y <- ddply(x, .(EVTYPE), summarize, 
+           count=length(YEAR), 
+           fatal=sum(fatal.sum), 
+           fatal_per_year=sum(fatal.sum)/length(YEAR),
+           injury=sum(injury.sum),
+           injury_per_year=sum(injury.sum)/length(YEAR))
+top_health <- unique(rbind(head(y[order(y$fatal_per_year, decreasing=TRUE),], N), head(y[order(y$injury_per_year, decreasing=TRUE),], N)))
+# Plot with clustering
+p <- ggplot(x[x$EVTYPE %in% top_health$EVTYPE,], aes(x=fatal.sum, y=injury.sum, colour=EVTYPE)) + geom_point() + stat_ellipse(geom='polygon', alpha=1/8, aes(fill=EVTYPE))
+# plot the average for all years
+# p <- p + geom_point(data=top_health, aes(x=fatal_per_year, y=injury_per_year)) + geom_point(aes(colour=EVTYPE))
+p <- p + xlab('Fatalities / Year')              # x-axis label
+p <- p + ylab('Injuries / Year')                # y-axis label
+p <- p + ggtitle("Top Storm Health Hazards")        # graph title
+print(p)
 ```
 
-Top-N Ordered by injuries per event
-```{r}
-head(x[order(x$injury.mean, decreasing=TRUE),], N)
-```
