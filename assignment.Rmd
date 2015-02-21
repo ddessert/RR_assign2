@@ -2,14 +2,16 @@
 title: "USA Hazardous Weather Events (1950-2011)"
 author: "David Dessert"
 date: "Tuesday, February 17, 2015"
-output: html_document
-keep_md: true
+output:
+  html_document:
+    fig_width: 9
+keep_md: yes
 ---
 
 ## Synopsis
 This report identifies weather severe events most harmful to people and property. Using historical data from the [NOAA Storm Database](http://www.ncdc.noaa.gov/stormevents/) between 1950 and 2011, annualized fatalities and injuries counts of weather events were analyzed and the worst weather events identified. By our analysis, tornadoes and heat events caused the most annual fatalities and injuries while droughts, floods, and hurricanes caused the most crop and property damage.
 
-## Downloading and Processing the Raw Source File
+## Data Processing
 First, we load the necessary packages to execute
 ```{r}
 library(ggplot2)
@@ -34,17 +36,8 @@ summary(df)
 ```
 
 ### Cleaning the Data
-Extract the year of occurrence
-```{r}
-df$YEAR <- as.numeric(gsub("\\d+/\\d+/(\\d+).*", "\\1", data$BGN_DATE))
-```
-
-Combine EVTYPE's that are identical (ignore case difference)
-```{r}
-levels(df$EVTYPE) <- toupper(levels(df$EVTYPE))
-```
-Not all weather events were available throughout the entire database.
-This table indicates the dates when weather events were available.
+Not all weather events were available for every year of the database.
+This table indicates the years when weather events were available.
 
 | Event Type(s)     | Dates Available     |
 | ----------------- | ------------------- |
@@ -54,12 +47,21 @@ This table indicates the dates when weather events were available.
 | All others        | Jan 1996 - Present  |
 
 Additionally, damage estimates were not recorded in the database prior to 1993.
+Extract the year of occurrence from the BGN_DATE field. We use this field to
+keep track of the year the event occurred.
+```{r year_extract}
+df$YEAR <- as.numeric(gsub("\\d+/\\d+/(\\d+).*", "\\1", data$BGN_DATE))
+```
 
-Here we merge some EVTYPE's into the event types enumerated by the NWS.
+Combine weather event names (EVTYPE) that are identical except for upper/lower case differences.
+```{r}
+levels(df$EVTYPE) <- toupper(levels(df$EVTYPE))
+```
+Merge weather event names into the event types enumerated by the NWS.
 The people who entered the data into the database were not very consistent.
-Here I coerce the various EVTYPE's used into one of the 48 EVTYPE's
+Here I coerce the various weather events used into one of the 48 weather events
 spelled out specifically in the [Storm Event documentation](http://www.nws.noaa.gov/directives/).
-Not all EVTYPE's remaining will have been coerced into the correct types,
+Not all weather events remaining will have been coerced into the correct types,
 but all weather events large enough to affect the analysis are corrected.
 
 ```{r EVTYPE_cleanup}
@@ -230,44 +232,50 @@ df$EVTYPE[grep("DAM FAILURE", df$EVTYPE)] <- "FLOOD"
 df$EVTYPE[grep("HIGH WATER", df$EVTYPE)] <- "FLOOD"
 ```
 
-### Incorporate the units for Crop & Property Damages
+### Incorporate the units into Crop & Property Damages
 The suffixes used in the database are quite varied. Based on a review of the
 entries, here is what I'm assuming each multiplier means:  
 
 Table: Damage Multipliers
-| DMGEXP     | Multiplier         | Interpretation           |
-| ---------- | ------------------ | ------------------------ |
-| b, B       | 10^9^ (Billions)   | Billions                 |
-| m, M       | 10^6^ (Millions)   | Millions                 |
-| k, K       | 10^3^ (Thousands)  | Thousands                |
-| h, H       | 10^2^ (Hundreds)   | Hundreds                 |
-| 0..8       | 10^1^ (Tens)       | extra significant digit  |
-| +          | 10^0^ (Ones)       | >                        |
-| -          | 10^0^ (Ones)       | <                        |
-| ?          | 10^0^ (Ones)       | usually 0                |
-| " "        | 10^0^ (Ones)       | usually 0                |
 
-Fix up the property and crop damage estimates using the multipliers.
-```{r}
-m <- rep(1, length = nrow(df))
-m[toupper(df$PROPDMGEXP)=="B"] <- 1E9
-m[toupper(df$PROPDMGEXP)=="M"] <- 1E6
-m[toupper(df$PROPDMGEXP)=="K"] <- 1E3
-m[toupper(df$PROPDMGEXP)=="H"] <- 1E2
+| DMGEXP     | Multiplier   | Interpretation           |
+| ---------- | ------------:| ------------------------ |
+| b, B       | 10^9^        | Billions                 |
+| m, M       | 10^6^        | Millions                 |
+| k, K       | 10^3^        | Thousands                |
+| h, H       | 10^2^        | Hundreds                 |
+| 0..8       | 10^1^        | extra significant digit  |
+| +          | 10^0^        | >                        |
+| -          | 10^0^        | <                        |
+| ?          | 10^0^        | usually 0                |
+| " "        | 10^0^        | usually 0                |
+
+Fix up the property and crop damage estimates using the multipliers based on the information in the table above.
+```{r cost_fixups, tidy=TRUE}
+m <- rep(1, length = nrow(df))                              # default to 1
+m[toupper(df$PROPDMGEXP)=="B"] <- 1E9                       # B, b
+m[toupper(df$PROPDMGEXP)=="M"] <- 1E6                       # M, m
+m[toupper(df$PROPDMGEXP)=="K"] <- 1E3                       # K, k
+m[toupper(df$PROPDMGEXP)=="H"] <- 1E2                       # H, h
+m[df$PROPDMGEXP %in% c('0','1','2','3','4','5','6','7','8','9')] <- 10                  # 0-9
 df$PROPDMG <- df$PROPDMG * m
 
-m <- rep(1, length = nrow(df))
-m[toupper(df$CROPDMGEXP)=="B"] <- 1E9
-m[toupper(df$CROPDMGEXP)=="M"] <- 1E6
-m[toupper(df$CROPDMGEXP)=="K"] <- 1E3
-m[toupper(df$CROPDMGEXP)=="H"] <- 1E2
+m <- rep(1, length = nrow(df))                              # default to 1
+m[toupper(df$CROPDMGEXP)=="B"] <- 1E9                       # B, b
+m[toupper(df$CROPDMGEXP)=="M"] <- 1E6                       # M, m
+m[toupper(df$CROPDMGEXP)=="K"] <- 1E3                       # K, k
+m[toupper(df$CROPDMGEXP)=="H"] <- 1E2                       # H, h
+m[df$CROPDMGEXP %in% c('0','1','2','3','4','5','6','7','8','9')] <- 10                  # 0-9
 df$CROPDMG <- df$CROPDMG * m
 ```
-
-## Results
-First, we summarize the weather events by year and event into a data frame used for the rest of the summary.
+Tabulate the weather events by {EVTYPE, YEAR} into a data frame that
+we'll use for the rest of the summary. In this report, we are annualizing
+the weather events. Tornadoes have been reported since 1950 whereas most
+weather events have ony been reported since 1993, so using a total count
+for comparison would skew the results.
 ```{r}
-x <- ddply(df, .(EVTYPE, YEAR), summarize, 
+N <- 4      # Number of top EVTYPE's to be plotted in each category
+df_summary <- ddply(df, .(EVTYPE, YEAR), summarize, 
            count=length(EVTYPE), 
            fatal.sum=sum(FATALITIES), 
            injury.sum=sum(INJURIES), 
@@ -275,25 +283,32 @@ x <- ddply(df, .(EVTYPE, YEAR), summarize,
            crop_dmg.sum=sum(CROPDMG)
            )
 ```
+## Results
+
 For each category of fatalities, injuries, crop damage, and property damage, 
-we'll be getting the top `r N` EVTYPE's for display. 
-When displaying the fatalities/injuries figure, less than `r 2*N` EVTYPE's 
-are displayed because of overlap in the fataility top `r N` EVTYPE's 
-and injury top `r N` EVTYPE's. The same comment holds true for the
-crop/property damage figure.
+we'll be getting the top `r N` weather events for display. 
+When displaying the fatalities/injuries figure, less than `r 2*N` weather events 
+are displayed because of overlap in the fataility top `r N` weather events 
+and injury top `r N` weather events. The same comment holds true for the
+crop/property damage figure.  
+
+### Property Damage
+
+This figure shows summarizes the annual damage reports for the Top 6 weather events
+that cause property damage. Each dot represents the damage caused in a particular
+year and the shape's width corresponds to more years with the damage amount.
 ```{r}
-N <- 4      # Number of top EVTYPE's to be plotted in each category
 # Note that property damage was not reported until 1993, so the
 # maximum number of years is limited to 19 (1993 - 2011)
-y <- ddply(x, .(EVTYPE), summarize, 
+df_figdata <- ddply(df_summary, .(EVTYPE), summarize, 
            count=min(length(YEAR), 19),
            damage=sum(prop_dmg.sum), 
            damage_per_year=sum(prop_dmg.sum)/min(length(YEAR), 19))
-top_damage <- head(y[order(y$damage_per_year, decreasing=TRUE),], 6)
+top_damage <- head(df_figdata[order(df_figdata$damage_per_year, decreasing=TRUE),], 6)
 ```
 
-```{r echo=FALSE, warning=FALSE, fig.width=9}
-p <- ggplot(x[x$EVTYPE %in% top_damage$EVTYPE & (x$YEAR >= 1993),], aes(x=EVTYPE, y=prop_dmg.sum)) 
+```{r warning=FALSE, fig.width=9, fig.cap="Weather-Related Property Damages"}
+p <- ggplot(df_summary[df_summary$EVTYPE %in% top_damage$EVTYPE & (df_summary$YEAR >= 1993),], aes(x=EVTYPE, y=prop_dmg.sum)) 
 p <- p + geom_violin(alpha=1/4, aes(fill=EVTYPE)) 
 p <- p + geom_jitter(aes(colour=EVTYPE))
 p <- p + scale_y_log10(breaks=c(1, 1E3, 1E6, 1E9, 1E12), labels=c("1","1K","1M","1B","1T"))
@@ -302,46 +317,90 @@ p <- p + ylab('Annual Property Damage ($)')             # y-axis label
 p <- p + ggtitle("Top Weather Property Hazards")      # graph title
 print(p)
 ```
+Table: Property Damage Summary
 
-Top-N Ordered by fatalities & injuries per year
-```{r echo=FALSE, warning=FALSE, fig.width=9}
-y <- ddply(x, .(EVTYPE), summarize, 
+| Rank | Weather Event    | Total Property Damage | Annualized Property Damage |
+| ---- | ---------- | ------------------:| ------------------------:|
+|   1  | `r top_damage$EVTYPE[1]` | $ `r top_damage$damage[1]/1E9`B   | $ `r top_damage$damage_per_year[1]/1E9`B |
+|   2  | `r top_damage$EVTYPE[2]` | $ `r top_damage$damage[2]/1E9`B   | $ `r top_damage$damage_per_year[2]/1E9`B |
+|   3  | `r top_damage$EVTYPE[3]` | $ `r top_damage$damage[3]/1E9`B   | $ `r top_damage$damage_per_year[3]/1E9`B |
+|   4  | `r top_damage$EVTYPE[4]` | $ `r top_damage$damage[4]/1E9`B   | $ `r top_damage$damage_per_year[4]/1E9`B |
+|   5  | `r top_damage$EVTYPE[5]` | $ `r top_damage$damage[5]/1E9`B   | $ `r top_damage$damage_per_year[5]/1E9`B |
+|   6  | `r top_damage$EVTYPE[6]` | $ `r top_damage$damage[6]/1E9`B   | $ `r top_damage$damage_per_year[6]/1E9`B |
+
+### Fatality and Injury Summary
+
+This figure shows summarizes past weather events recording the top `r N`
+annualized fatality and top `r N` injury counts. Each dot represents the
+recorded fatalities/injuries in a particular year. For each weather event,
+an oval was drawn to encompass a 95% CI illustrating where future years' 
+expected fatalities/injuries counts may lie.
+```{r warning=FALSE, fig.width=9}
+df_figdata <- ddply(df_summary, .(EVTYPE), summarize, 
            count=length(YEAR), 
            fatal=sum(fatal.sum), 
            fatal_per_year=sum(fatal.sum)/length(YEAR),
            injury=sum(injury.sum),
            injury_per_year=sum(injury.sum)/length(YEAR))
-top_health <- unique(rbind(head(y[order(y$fatal_per_year, decreasing=TRUE),], N), head(y[order(y$injury_per_year, decreasing=TRUE),], N)))
+top_fatal <- df_figdata[order(df_figdata$fatal_per_year, decreasing=TRUE),]
+top_injury <- df_figdata[order(df_figdata$injury_per_year, decreasing=TRUE),]
+top_health <- unique(rbind(head(top_fatal, N), 
+                           head(top_injury, N)))
 # Plot with clustering
-p <- ggplot(x[x$EVTYPE %in% top_health$EVTYPE,], aes(x=fatal.sum, y=injury.sum, colour=EVTYPE)) + geom_point() + stat_ellipse(geom='polygon', alpha=1/8, aes(fill=EVTYPE))
-# plot the average for all years
+p <- ggplot(df_summary[df_summary$EVTYPE %in% top_health$EVTYPE,], aes(x=fatal.sum, y=injury.sum, colour=EVTYPE)) + geom_point() + stat_ellipse(geom='polygon', alpha=1/8, aes(fill=EVTYPE))
+# For each EVTYPE, add a larger point to indicate the average for all years
 # p <- p + geom_point(data=top_health, aes(x=fatal_per_year, y=injury_per_year)) + geom_point(aes(colour=EVTYPE))
 p <- p + scale_y_log10(breaks=c(1, 10, 100, 1000, 10000), labels=c("1","10","10","1000","10K"), limits=c(0.9, 10000))
 p <- p + scale_x_log10(breaks=c(1, 10, 100, 1000, 10000), labels=c("1","10","10","1000","10K"), limits=c(0.9, 10000))
-p <- p + xlab('Annual Fatalities')              # x-axis label
-p <- p + ylab('Annual Injuries')                # y-axis label
+p <- p + xlab('Annual Fatalities')                    # x-axis label
+p <- p + ylab('Annual Injuries')                      # y-axis label
 p <- p + ggtitle("Top Weather Health Hazards")        # graph title
 print(p)
 ```
+Table: Fatality / Injury Summary
 
+| Rank | Fatal Weather Events | Total / Annual Fatalities | Injury Weather Events | Total / Annual Injuries 
+| ---- | ---------- | ------------------:| ---------- | ------------------------:|
+| 1 | `r top_fatal$EVTYPE[1]` | `r top_fatal$fatal[1]` / `r round(top_fatal$fatal_per_year[1])` | `r top_injury$EVTYPE[1]` | `r top_injury$injury[1]` / `r round(top_injury$injury_per_year[1])` |
+| 2 | `r top_fatal$EVTYPE[2]` | `r top_fatal$fatal[2]` / `r round(top_fatal$fatal_per_year[2])` | `r top_injury$EVTYPE[2]` | `r top_injury$injury[2]` / `r round(top_injury$injury_per_year[2])` |
+| 3 | `r top_fatal$EVTYPE[3]` | `r top_fatal$fatal[3]` / `r round(top_fatal$fatal_per_year[3])` | `r top_injury$EVTYPE[3]` | `r top_injury$injury[3]` / `r round(top_injury$injury_per_year[3])` |
+| 4 | `r top_fatal$EVTYPE[4]` | `r top_fatal$fatal[4]` / `r round(top_fatal$fatal_per_year[4])` | `r top_injury$EVTYPE[4]` | `r top_injury$injury[4]` / `r round(top_injury$injury_per_year[4])` |
 
-Top-N Ordered by property & crop damage per year
-```{r echo=FALSE, warning=FALSE, fig.width=9}
-y <- ddply(x, .(EVTYPE), summarize, 
+### Property and Crop Damage Summary
+
+This figure shows summarizes past weather events recording the top `r N`
+annualized property and top `r N` crop damage dollar amounts. Each dot represents the
+recorded property/crop damage in a particular year. For each weather event,
+an oval was drawn to encompass a 95% CI illustrating where future years' 
+expected property/crop damages may lie.
+```{r warning=FALSE, fig.width=9}
+df_figdata <- ddply(df_summary, .(EVTYPE), summarize, 
            count=length(YEAR), 
            prop=sum(prop_dmg.sum), 
            prop_per_year=sum(prop_dmg.sum)/length(YEAR),
            crop=sum(crop_dmg.sum),
            crop_per_year=sum(crop_dmg.sum)/length(YEAR))
-top_damage <- unique(rbind(head(y[order(y$prop_per_year, decreasing=TRUE),], N), head(y[order(y$crop_per_year, decreasing=TRUE),], N)))
+top_prop <- df_figdata[order(df_figdata$prop_per_year, decreasing=TRUE),]
+top_crop <- df_figdata[order(df_figdata$crop_per_year, decreasing=TRUE),]
+top_damage <- unique(rbind(head(top_prop, N), 
+                           head(top_crop, N)))
 # Plot with clustering
-p <- ggplot(x[x$EVTYPE %in% top_damage$EVTYPE,], aes(x=prop_dmg.sum+1, y=crop_dmg.sum+1, colour=EVTYPE)) + geom_point() + stat_ellipse(geom='polygon', alpha=1/8, aes(fill=EVTYPE))
+p <- ggplot(df_summary[df_summary$EVTYPE %in% top_damage$EVTYPE,], aes(x=prop_dmg.sum+1, y=crop_dmg.sum+1, colour=EVTYPE)) + geom_point() + stat_ellipse(geom='polygon', alpha=1/8, aes(fill=EVTYPE))
 p <- p + scale_y_log10(breaks=c(1, 1E3, 1E6, 1E9, 1E12), labels=c("1","1K","1M","1B","1T"), limits=c(0.000001, 1E14))
 p <- p + scale_x_log10(breaks=c(1, 1E3, 1E6, 1E9, 1E12), labels=c("1","1K","1M","1B","1T"), limits=c(0.000001, 1E14))
-# plot the average for all years
+# For each EVTYPE, add a larger point to indicate the average for all years
 # p <- p + geom_point(data=top_health, aes(x=fatal_per_year, y=injury_per_year)) + geom_point(aes(colour=EVTYPE))
 p <- p + xlab('Annual Property Damage ($)')              # x-axis label
-p <- p + ylab('Annual Crop Damage ($)')                # y-axis label
-p <- p + ggtitle("Top Weather Property Hazards")        # graph title
+p <- p + ylab('Annual Crop Damage ($)')                  # y-axis label
+p <- p + ggtitle("Top Weather Property Hazards")         # graph title
 print(p)
 ```
+
+Table: Property / Crop Damage Summary
+
+| Rank | Property Weather Events | Total / Annual Damage | Crop Weather Events | Total / Annual Damage 
+| ---- | ---------- | ------------------:| ---------- | ------------------------:|
+| 1 | `r top_prop$EVTYPE[1]` | $ `r top_prop$prop[1]/1E9`B / $ `r top_prop$prop_per_year[1]/1E9`B | `r top_crop$EVTYPE[1]` | $ `r top_crop$crop[1]/1E9`B / $ `r top_crop$crop_per_year[1]/1E9`B |
+| 2 | `r top_prop$EVTYPE[2]` | $ `r top_prop$prop[2]/1E9`B / $ `r top_prop$prop_per_year[2]/1E9`B | `r top_crop$EVTYPE[2]` | $ `r top_crop$crop[2]/1E9`B / $ `r top_crop$crop_per_year[2]/1E9`B |
+| 3 | `r top_prop$EVTYPE[3]` | $ `r top_prop$prop[3]/1E9`B / $ `r top_prop$prop_per_year[3]/1E9`B | `r top_crop$EVTYPE[3]` | $ `r top_crop$crop[3]/1E9`B / $ `r top_crop$crop_per_year[3]/1E9`B |
+| 4 | `r top_prop$EVTYPE[4]` | $ `r top_prop$prop[4]/1E9`B / $ `r top_prop$prop_per_year[4]/1E9`B | `r top_crop$EVTYPE[4]` | $ `r top_crop$crop[4]/1E9`B / $ `r top_crop$crop_per_year[4]/1E9`B |
