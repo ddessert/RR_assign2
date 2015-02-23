@@ -60,7 +60,7 @@ levels(df$EVTYPE) <- toupper(levels(df$EVTYPE))
 Merge weather event names into the event types enumerated by the NWS.
 The people who entered the data into the database were not very consistent.
 Here I coerce the various weather events used into one of the 48 weather events
-spelled out specifically in the [Storm Event documentation](http://www.nws.noaa.gov/directives/).
+spelled out specifically in the [Storm Event documentation](http://www.nws.noaa.gov/directives/sym/pd01016005curr.pdf).
 Not all weather events remaining will have been coerced into the correct types,
 but all weather events large enough to affect the analysis are corrected.
 
@@ -317,6 +317,7 @@ p <- p + ylab('Annual Property Damage ($)')             # y-axis label
 p <- p + ggtitle("Top Weather Property Hazards")      # graph title
 print(p)
 ```
+
 Table: Property Damage Summary
 
 | Rank | Weather Event    | Total Property Damage | Annualized Property Damage |
@@ -357,6 +358,9 @@ p <- p + ylab('Annual Injuries')                      # y-axis label
 p <- p + ggtitle("Top Weather Health Hazards")        # graph title
 print(p)
 ```
+
+The results indicate that Heat and Tornadoes are the major weather-related causes of injuries and fatalities. Floods, Flash Floods, and Lightning are major causes of injuries, but not fatalities.
+
 Table: Fatality / Injury Summary
 
 | Rank | Fatal Weather Events | Total / Annual Fatalities | Injury Weather Events | Total / Annual Injuries 
@@ -395,6 +399,8 @@ p <- p + ylab('Annual Crop Damage ($)')                  # y-axis label
 p <- p + ggtitle("Top Weather Property Hazards")         # graph title
 print(p)
 ```
+
+The results indicate that Drought, Floods, and Hurricanes are the major weather-related causes of crop damage. Hurricanes, Floods, Hurricanes, and Storm Surges are major causes of property damage.
 
 Table: Property / Crop Damage Summary
 
